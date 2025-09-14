@@ -1,29 +1,32 @@
+import 'dart:io';
 import '../models/launch_config.dart';
 import '../models/mc_environment.dart';
 
 /// 启动参数构建工具
 class LaunchArgsBuilder {
-  /// 构建完整的启动参数列表
+  /// 构建纯净版启动参数
   static List<String> buildArgs(LaunchConfig config) {
     final List<String> args = [];
     
-    // JVM 内存参数
+    // JVM 基础参数
     args.addAll([
       '-Xmx${config.memory}M',
       '-Xms${config.memory}M',
     ]);
     
-    // 添加额外的 JVM 参数
-    args.addAll(config.additionalArgs);
+    // macOS 需要的特殊参数
+    if (Platform.isMacOS) {
+      args.add('-XstartOnFirstThread');
+    }
     
-    // Minecraft 相关参数
+    // 必要的系统参数
     args.addAll([
       '-Djava.library.path=${McEnvironment.getVersionNativesPath(config.version)}',
       '-Dminecraft.launcher.brand=mc_launch',
       '-Dminecraft.launcher.version=1.0.0',
       '-cp',
       _buildClasspath(config.version),
-      'net.minecraft.client.main.Main',
+      'net.minecraft.client.main.Main', // 纯净版固定主类
     ]);
     
     // 游戏启动参数
@@ -32,11 +35,34 @@ class LaunchArgsBuilder {
     return args;
   }
   
-  /// 构建类路径（简化版本）
+  /// 构建类路径
   static String _buildClasspath(String version) {
-    // MVP 版本：只返回主 jar 文件
-    // 完整版本应该解析版本 JSON 文件获取所有依赖库
-    return McEnvironment.getVersionJarPath(version);
+    final List<String> classpathEntries = [];
+    
+    // 主 jar 文件
+    final mainJar = McEnvironment.getVersionJarPath(version);
+    classpathEntries.add(mainJar);
+    
+    // 添加所有依赖库
+    final librariesDir = Directory(McEnvironment.librariesPath);
+    if (librariesDir.existsSync()) {
+      _addJarsFromDirectory(librariesDir, classpathEntries);
+    }
+    
+    return classpathEntries.join(Platform.isWindows ? ';' : ':');
+  }
+  
+  /// 递归添加目录中的 jar 文件
+  static void _addJarsFromDirectory(Directory dir, List<String> classpathEntries) {
+    try {
+      for (final entity in dir.listSync(recursive: true)) {
+        if (entity is File && entity.path.endsWith('.jar')) {
+          classpathEntries.add(entity.path);
+        }
+      }
+    } catch (e) {
+      // 忽略扫描错误
+    }
   }
   
   /// 构建游戏参数
@@ -48,8 +74,11 @@ class LaunchArgsBuilder {
       '--version', config.version,
       '--gameDir', gameDir,
       '--assetsDir', McEnvironment.assetsPath,
-      '--assetIndex', config.version,
+      '--assetIndex', '26', // 1.21.8 使用的资产索引
       '--userType', 'offline',
+      '--accessToken', 'offline_token',
+      '--versionType', 'release',
+      '--uuid', '00000000-0000-0000-0000-000000000000',
     ];
   }
 }

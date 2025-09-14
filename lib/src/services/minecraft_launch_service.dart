@@ -5,14 +5,14 @@ import 'version_service.dart';
 
 /// Minecraft 启动器服务
 class MinecraftLaunchService {
-  
-  /// 启动纯净版 Minecraft
+
+  /// 启动Minecraft
   /// 
   /// 参数:
   /// - [versionPath]: 版本的完整路径
   /// - [username]: 游戏用户名
   /// - [memory]: 内存大小（MB）
-  static Future<Process> launchVanilla({
+  static Future<Process> launch({
     required String versionPath,
     required String username,
     int memory = 2048,
@@ -65,6 +65,7 @@ class MinecraftLaunchService {
       throw LaunchException('启动失败: $e');
     }
   }
+
   
   /// 查找 Java 可执行文件
   static Future<String> _findJavaExecutable() async {

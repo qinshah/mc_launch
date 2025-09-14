@@ -6,7 +6,7 @@ void main() async {
   print('=== Minecraft 启动器使用示例 ===');
   
   // 硬编码的 .minecraft 路径（在实际使用中，这应该由用户提供）
-  const minecraftPath = '/Users/qshh/Desktop/Dev/FA/unknown_studio/.minecraft';
+  const minecraftPath = '/Applications/.minecraft';
   
   print('使用的 .minecraft 路径: $minecraftPath');
   print('');
@@ -32,7 +32,7 @@ void main() async {
   
   // 第二步：检测游戏版本
   print('2. 检测游戏版本...');
-  final versionPaths = MinecraftLauncher.detectVersions(minecraftPath);
+  final versionPaths = MinecraftLauncher.detectVersions(minecraftPath, includeModded: true,);
   
   if (versionPaths.isEmpty) {
     print('❌ 未找到任何游戏版本');
@@ -40,11 +40,10 @@ void main() async {
     return;
   }
   
-  print('找到 ${versionPaths.length} 个游戏版本:');
+  print('✅ 找到${versionPaths.length}个游戏版本:');
   for (int i = 0; i < versionPaths.length; i++) {
     final versionName = versionPaths[i].split('/').last;
-    print('  $i. $versionName');
-    print('     路径: ${versionPaths[i]}');
+    print('     ${i}：    🎮🎮🎮 $versionName 🎮🎮🎮       路径: ${versionPaths[i]}');
   }
   print('');
   
@@ -87,7 +86,7 @@ void main() async {
   print('');
   
   try {
-    final process = await MinecraftLauncher.launchVanilla(
+    final process = await MinecraftLauncher.launch(
       versionPath: selectedVersionPath,
       username: username,
       memory: 2048,

@@ -1,6 +1,6 @@
 name: mc_launch
 description: "A Dart package for launching Minecraft with configurable parameters."
-version: 0.0.1
+version: 0.1.0+2
 homepage:
 
 environment:

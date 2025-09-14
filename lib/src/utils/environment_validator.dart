@@ -1,36 +1,40 @@
 import 'dart:io';
-import '../models/mc_environment.dart';
 
 /// 环境验证工具
 class EnvironmentValidator {
   /// 验证 Java 环境
   static Future<bool> validateJava() async {
-    try {
-      final result = await Process.run('which', ['java']);
-      return result.exitCode == 0;
-    } catch (e) {
-      return false;
+    // 尝试常见的 Java 路径
+    final javaPaths = [
+      'java', // 系统 PATH 中的 java
+      '/usr/bin/java',
+      '/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java',
+    ];
+    
+    for (final javaPath in javaPaths) {
+      try {
+        final result = await Process.run(javaPath, ['-version']);
+        if (result.exitCode == 0) {
+          return true;
+        }
+      } catch (e) {
+        // 继续尝试下一个路径
+      }
     }
+    
+    return false;
   }
   
   /// 验证 .minecraft 目录
-  static bool validateMinecraftDir() {
-    final minecraftDir = Directory(McEnvironment.minecraftPath);
+  static bool validateMinecraftDir(String minecraftPath) {
+    final minecraftDir = Directory(minecraftPath);
     return minecraftDir.existsSync();
   }
   
-  /// 验证指定版本
-  static bool validateVersion(String version) {
-    final versionDir = Directory(McEnvironment.getVersionPath(version));
-    final jarFile = File(McEnvironment.getVersionJarPath(version));
-    
-    return versionDir.existsSync() && jarFile.existsSync();
-  }
-  
   /// 完整环境验证
-  static Future<ValidationResult> validateEnvironment() async {
+  static Future<ValidationResult> validateEnvironment(String minecraftPath) async {
     final javaValid = await validateJava();
-    final minecraftDirValid = validateMinecraftDir();
+    final minecraftDirValid = validateMinecraftDir(minecraftPath);
     
     return ValidationResult(
       javaAvailable: javaValid,

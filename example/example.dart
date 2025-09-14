@@ -1,23 +1,28 @@
+import 'dart:io';
 import 'package:mc_launch/mc_launch.dart';
 
-/// Minecraft 启动器 MVP 使用示例
+/// Minecraft 启动器使用示例
 void main() async {
-  print('=== Minecraft 启动器 MVP 版本 ===');
-  print('Minecraft 路径: ${McEnvironment.minecraftPath}');
+  print('=== Minecraft 启动器使用示例 ===');
+  
+  // 硬编码的 .minecraft 路径（在实际使用中，这应该由用户提供）
+  const minecraftPath = '/Users/qshh/Desktop/Dev/FA/unknown_studio/.minecraft';
+  
+  print('使用的 .minecraft 路径: $minecraftPath');
   print('');
   
-  // 1. 验证环境
-  print('正在验证环境...');
-  final validation = await MinecraftLauncher.validateEnvironment();
+  // 第一步：验证环境
+  print('1. 验证环境...');
+  final validation = await MinecraftLauncher.validateEnvironment(minecraftPath);
   print('验证结果: $validation');
   
   if (!validation.isValid) {
-    print('❌ 环境验证失败');
+    print('❌ 环境验证失败，请检查:');
     if (!validation.javaAvailable) {
-      print('  - Java 不可用，请安装 Java');
+      print('  - Java 未安装或不在 PATH 中');
     }
     if (!validation.minecraftDirExists) {
-      print('  - .minecraft 目录不存在: ${McEnvironment.minecraftPath}');
+      print('  - .minecraft 目录不存在: $minecraftPath');
     }
     return;
   }
@@ -25,61 +30,120 @@ void main() async {
   print('✅ 环境验证通过');
   print('');
   
-  // 2. 检查可用版本
-  print('正在检查已安装的版本...');
-  final versions = MinecraftLauncher.getInstalledVersions();
+  // 第二步：检测游戏版本
+  print('2. 检测游戏版本...');
+  final versionPaths = MinecraftLauncher.detectVersions(minecraftPath);
   
-  if (versions.isEmpty) {
-    print('❌ 未找到任何已安装的 Minecraft 版本');
-    print('请确保在 ${McEnvironment.versionsPath} 目录下有正确的版本文件');
+  if (versionPaths.isEmpty) {
+    print('❌ 未找到任何游戏版本');
+    print('请确保 $minecraftPath/versions 目录中有有效的游戏版本');
     return;
   }
   
-  print('✅ 找到 ${versions.length} 个已安装的版本:');
-  for (final version in versions) {
-    print('  - $version');
+  print('找到 ${versionPaths.length} 个游戏版本:');
+  for (int i = 0; i < versionPaths.length; i++) {
+    final versionName = versionPaths[i].split('/').last;
+    print('  $i. $versionName');
+    print('     路径: ${versionPaths[i]}');
   }
   print('');
   
-  // 3. 启动示例（注释掉实际启动代码，避免意外启动）
-  print('启动示例（代码演示）:');
+  // 第三步：选择版本（这里简单选择第一个）
+  print('3. 选择版本...');
+  print('请输入要启动的版本编号 (0-${versionPaths.length - 1})，或直接回车选择第一个:');
+  
+  final input = stdin.readLineSync()?.trim() ?? '';
+  int selectedIndex = 0;
+  
+  if (input.isNotEmpty) {
+    try {
+      selectedIndex = int.parse(input);
+      if (selectedIndex < 0 || selectedIndex >= versionPaths.length) {
+        print('无效的编号，使用第一个版本');
+        selectedIndex = 0;
+      }
+    } catch (e) {
+      print('输入无效，使用第一个版本');
+      selectedIndex = 0;
+    }
+  }
+  
+  final selectedVersionPath = versionPaths[selectedIndex];
+  final selectedVersionName = selectedVersionPath.split('/').last;
+  
+  print('选择的版本: $selectedVersionName');
+  print('版本路径: $selectedVersionPath');
   print('');
   
-  // 方式 1: 快速启动
-  print('// 快速启动（使用第一个可用版本）');
-  print('final process1 = await MinecraftLauncher.quickLaunch(\"Player1\");');
+  // 第四步：启动游戏
+  print('4. 启动游戏...');
+  print('请输入游戏用户名（或直接回车使用 Player）:');
+  
+  final usernameInput = stdin.readLineSync()?.trim() ?? '';
+  final username = usernameInput.isEmpty ? 'Player' : usernameInput;
+  
+  print('用户名: $username');
+  print('正在启动 Minecraft，请稍候...');
   print('');
-  
-  // 方式 2: 指定配置启动
-  print('// 指定配置启动');
-  print('final process2 = await MinecraftLauncher.launch(');
-  print('  version: \"${versions.first}\",');
-  print('  username: \"Player2\",');
-  print('  memory: 4096,');
-  print('  additionalArgs: [\"-XX:+UseG1GC\"],');
-  print(');');
-  print('');
-  
-  print('要实际启动游戏，请取消注释上面的代码');
-  
-  /* 实际启动代码示例（取消注释以使用）:
   
   try {
-    print('正在启动 Minecraft...');
-    final process = await MinecraftLauncher.quickLaunch('TestPlayer');
-    print('✅ Minecraft 启动成功，进程 ID: ${process.pid}');
+    final process = await MinecraftLauncher.launchVanilla(
+      versionPath: selectedVersionPath,
+      username: username,
+      memory: 2048,
+    );
     
-    // 监听进程输出（可选）
+    print('✅ Minecraft 启动成功！');
+    print('进程 ID: ${process.pid}');
+    print('');
+    print('游戏正在启动中，请查看 Minecraft 窗口...');
+    print('监听游戏输出（前 10 秒）:');
+    
+    // 监听进程输出
+    var outputCount = 0;
+    
     process.stdout.listen((data) {
-      print('MC输出: ${String.fromCharCodes(data)}');
+      final output = String.fromCharCodes(data).trim();
+      if (output.isNotEmpty && outputCount < 5) {
+        print('[游戏输出] $output');
+        outputCount++;
+      }
     });
     
     process.stderr.listen((data) {
-      print('MC错误: ${String.fromCharCodes(data)}');
+      final output = String.fromCharCodes(data).trim();
+      if (output.isNotEmpty && outputCount < 5) {
+        print('[游戏错误] $output');
+        outputCount++;
+      }
     });
+    
+    // 等待 10 秒或进程结束
+    final result = await Future.any([
+      Future.delayed(Duration(seconds: 10)).then((_) => 'timeout'),
+      process.exitCode.then((code) => 'exited:$code'),
+    ]);
+    
+    if (result == 'timeout') {
+      print('');
+      print('✅ Minecraft 正在运行中！');
+      print('进程 ID: ${process.pid}');
+      print('要关闭游戏，请直接在游戏窗口中退出。');
+    } else {
+      final exitCode = result.toString().split(':')[1];
+      if (exitCode == '0') {
+        print('✅ Minecraft 正常退出');
+      } else {
+        print('⚠️ Minecraft 异常退出，退出码: $exitCode');
+      }
+    }
     
   } catch (e) {
     print('❌ 启动失败: $e');
+    print('');
+    print('可能的解决方案:');
+    print('1. 检查 Java 是否正确安装');
+    print('2. 检查游戏版本文件是否完整');
+    print('3. 检查是否有足够的内存');
   }
-  */
 }

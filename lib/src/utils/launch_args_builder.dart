@@ -1,17 +1,22 @@
 import 'dart:io';
-import '../models/launch_config.dart';
-import '../models/mc_environment.dart';
+import 'package:path/path.dart' as path;
+import '../services/version_service.dart';
 
 /// 启动参数构建工具
 class LaunchArgsBuilder {
   /// 构建纯净版启动参数
-  static List<String> buildArgs(LaunchConfig config) {
+  static List<String> buildVanillaArgs({
+    required String versionPath,
+    required String minecraftPath,
+    required String username,
+    int memory = 2048,
+  }) {
     final List<String> args = [];
     
     // JVM 基础参数
     args.addAll([
-      '-Xmx${config.memory}M',
-      '-Xms${config.memory}M',
+      '-Xmx${memory}M',
+      '-Xms${memory}M',
     ]);
     
     // macOS 需要的特殊参数
@@ -21,30 +26,34 @@ class LaunchArgsBuilder {
     
     // 必要的系统参数
     args.addAll([
-      '-Djava.library.path=${McEnvironment.getVersionNativesPath(config.version)}',
+      '-Djava.library.path=${VersionService.getVersionNativesPath(versionPath)}',
       '-Dminecraft.launcher.brand=mc_launch',
       '-Dminecraft.launcher.version=1.0.0',
       '-cp',
-      _buildClasspath(config.version),
+      _buildClasspath(versionPath, minecraftPath),
       'net.minecraft.client.main.Main', // 纯净版固定主类
     ]);
     
     // 游戏启动参数
-    args.addAll(_buildGameArgs(config));
+    args.addAll(_buildGameArgs(
+      versionPath: versionPath,
+      minecraftPath: minecraftPath,
+      username: username,
+    ));
     
     return args;
   }
   
   /// 构建类路径
-  static String _buildClasspath(String version) {
+  static String _buildClasspath(String versionPath, String minecraftPath) {
     final List<String> classpathEntries = [];
     
     // 主 jar 文件
-    final mainJar = McEnvironment.getVersionJarPath(version);
+    final mainJar = VersionService.getVersionJarPath(versionPath);
     classpathEntries.add(mainJar);
     
     // 添加所有依赖库
-    final librariesDir = Directory(McEnvironment.librariesPath);
+    final librariesDir = Directory(path.join(minecraftPath, 'libraries'));
     if (librariesDir.existsSync()) {
       _addJarsFromDirectory(librariesDir, classpathEntries);
     }
@@ -66,14 +75,18 @@ class LaunchArgsBuilder {
   }
   
   /// 构建游戏参数
-  static List<String> _buildGameArgs(LaunchConfig config) {
-    final gameDir = config.gameDir ?? McEnvironment.minecraftPath;
+  static List<String> _buildGameArgs({
+    required String versionPath,
+    required String minecraftPath,
+    required String username,
+  }) {
+    final versionName = VersionService.getVersionNameFromPath(versionPath);
     
     return [
-      '--username', config.username,
-      '--version', config.version,
-      '--gameDir', gameDir,
-      '--assetsDir', McEnvironment.assetsPath,
+      '--username', username,
+      '--version', versionName,
+      '--gameDir', minecraftPath,
+      '--assetsDir', path.join(minecraftPath, 'assets'),
       '--assetIndex', '26', // 1.21.8 使用的资产索引
       '--userType', 'offline',
       '--accessToken', 'offline_token',

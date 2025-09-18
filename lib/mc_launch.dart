@@ -12,7 +12,7 @@ import 'src/utils/environment_validator.dart';
 import 'dart:io';
 
 /// Minecraft 启动器 - 主要 API 类
-class MinecraftLauncher {
+class MCLauncher {
   
   /// 1. 检测游戏版本
   /// 

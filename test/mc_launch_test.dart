@@ -18,7 +18,7 @@ void main() {
         final path = testMinecraftPaths[i];
         print('\n测试路径 ${i + 1}: $path');
         
-        final result = await MinecraftLauncher.validateEnvironment(path);
+        final result = await MCLauncher.validateEnvironment(path);
         
         print('  Java 可用: ${result.javaAvailable}');
         print('  目录存在: ${result.minecraftDirExists}');
@@ -49,7 +49,7 @@ void main() {
         
         // 首先检测纯净版
         print('  🔍 检测纯净版...');
-        final vanillaVersions = MinecraftLauncher.detectVersions(path, includeModded: false, verbose: true);
+        final vanillaVersions = MCLauncher.detectVersions(path, includeModded: false, verbose: true);
         
         print('  检测到 ${vanillaVersions.length} 个纯净版:');
         
@@ -77,7 +77,7 @@ void main() {
         
         // 然后检测所有版本（包括模组）
         print('  🔍 检测所有版本（包括模组）...');
-        final allVersions = MinecraftLauncher.detectVersions(path, includeModded: true, verbose: true);
+        final allVersions = MCLauncher.detectVersions(path, includeModded: true, verbose: true);
         
         print('  检测到 ${allVersions.length} 个版本（含模组）:');
         
@@ -108,7 +108,7 @@ void main() {
           continue;
         }
         
-        final versions = MinecraftLauncher.detectVersions(path, includeModded: true, verbose: false);
+        final versions = MCLauncher.detectVersions(path, includeModded: true, verbose: false);
         
         if (versions.isEmpty) {
           print('  📂 没有可用版本，跳过启动测试');
@@ -123,7 +123,7 @@ void main() {
         print('  👤 用户名: $testUsername');
         
         try {
-          final process = await MinecraftLauncher.launch(
+          final process = await MCLauncher.launch(
             versionPath: testVersionPath,
             username: testUsername,
             memory: 1024, // 使用较小内存进行测试

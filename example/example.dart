@@ -6,14 +6,14 @@ void main() async {
   print('=== Minecraft 启动器使用示例 ===');
   
   // 硬编码的 .minecraft 路径（在实际使用中，这应该由用户提供）
-  const minecraftPath = '/Applications/.minecraft';
+  const minecraftPath = '/Users/qshh/Desktop/MC/纯净版';
   
   print('使用的 .minecraft 路径: $minecraftPath');
   print('');
   
   // 第一步：验证环境
   print('1. 验证环境...');
-  final validation = await MinecraftLauncher.validateEnvironment(minecraftPath);
+  final validation = await MCLauncher.validateEnvironment(minecraftPath);
   print('验证结果: $validation');
   
   if (!validation.isValid) {
@@ -32,7 +32,7 @@ void main() async {
   
   // 第二步：检测游戏版本
   print('2. 检测游戏版本...');
-  final versionPaths = MinecraftLauncher.detectVersions(minecraftPath, includeModded: true,);
+  final versionPaths = MCLauncher.detectVersions(minecraftPath, includeModded: true,);
   
   if (versionPaths.isEmpty) {
     print('❌ 未找到任何游戏版本');
@@ -86,7 +86,7 @@ void main() async {
   print('');
   
   try {
-    final process = await MinecraftLauncher.launch(
+    final process = await MCLauncher.launch(
       versionPath: selectedVersionPath,
       username: username,
       memory: 2048,
